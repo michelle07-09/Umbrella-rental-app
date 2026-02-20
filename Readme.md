@@ -55,19 +55,25 @@ eas build --platform android --profile preview
 ## Struktur Project
 ```
 umbrella-rental-app/
-├── App.js                   # Root: auth state + tab navigator
-├── app.json                 # Expo config + Android settings
+├── app.json              
+├── App.js                
 ├── package.json
-├── supabase_setup.sql       # SQL untuk setup Supabase
+├── babel.config.js
+├── metro.config.js
 └── src/
-    ├── supabase.js          # Supabase client
+    ├── supabase.js       
     ├── constants/
-    │   └── mapData.js       # Koordinat ITB: spots, rain zones, security
-    └── screens/
-        ├── AuthScreen.js        # Login + Register
-        ├── MapScreen.js         # Peta ITB + rental spots
-        ├── ActiveRentalScreen.js # Timer live + return umbrella
-        └── ProfileScreen.js     # Saldo + top up + riwayat
+    │   └── MapData.js    
+    ├── screens/
+    │   ├── AuthScreen.js
+    │   ├── MapScreen.js
+    │   ├── ActiveRentalScreen.js
+    │   ├── ProfileScreen.js
+    │   ├── PaymentScreen.js       
+    │   ├── PaymentSuccessScreen.js 
+    │   └── SplashScreen.js        
+    └── services/
+        └── Whatsapp.js            
 ```
 
 ---

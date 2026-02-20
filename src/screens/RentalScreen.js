@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Button, Alert } from 'react-native';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../../supabaseClient';
 
 export default function RentalScreen({ route }) {
   const { rental } = route.params;
