@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polygon, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { supabase } from '../supabase';
+import { supabase } from 'src/supabase';
 import {
   ITB_CENTER, RAIN_RISK_ZONES, SECURITY_POSTS, DURATION_OPTIONS,
 } from 'src/constants/mapData';

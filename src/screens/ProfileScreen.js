@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
-import { supabase } from '../supabase';
+import { supabase } from 'src/supabase';
 import { RENTAL_SPOTS } from 'src/constants/mapData';
 
 const TOP_UP_OPTIONS = [5000, 10000, 20000, 50000];
