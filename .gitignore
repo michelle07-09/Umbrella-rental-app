@@ -1,34 +1,6 @@
-# Node modules
 node_modules/
-
-# Expo
 .expo/
-.expo-shared/
-
-# Build outputs
-android/
-ios/
-build/
-dist/
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-expo-error.log*
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Environment variables
 .env
-.env.local
-.env.development
-.env.production
-
-# Supabase generated files (if any)
-.supabase/
-
-# Metro bundler cache
-.expo-cache/
+android/
+.dist/
+.claude/

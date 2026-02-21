@@ -4,12 +4,14 @@
     "slug": "umbrella-rental-app",
     "version": "1.0.0",
     "sdkVersion": "51.0.0",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "android": {
-      "package": "com.miche07.umbrellarentalapp"
+      "package": "com.miche07.umbrellarentalapp",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAfEhkQXcsksqL0H9HNGY1onccqZ_6TJYo"
+        }
+      }
     }
   }
 }
