@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,7 +19,7 @@ import PaymentSuccessScreen from './src/screens/PaymentSuccessScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function MainTabs({ userId, activeRental, onRentalStarted, onRentalEnded }) {
+function MainTabs({ userId, activeRental, onRentalEnded, onRefreshRental }) {
   return (
     <Tab.Navigator screenOptions={tabOptions}>
       <Tab.Screen name="Peta">
@@ -27,7 +27,6 @@ function MainTabs({ userId, activeRental, onRentalStarted, onRentalEnded }) {
           <MapScreen
             userId={userId}
             activeRental={activeRental}
-            onRentalStarted={onRentalStarted}
           />
         )}
       </Tab.Screen>
@@ -58,6 +57,27 @@ function MainTabs({ userId, activeRental, onRentalStarted, onRentalEnded }) {
         {() => <ProfileScreen userId={userId} />}
       </Tab.Screen>
     </Tab.Navigator>
+  );
+}
+
+// Wrapper untuk Main screen agar bisa listen focus event
+function MainScreen({ userId, activeRental, onRentalEnded, fetchActiveRental }) {
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    // Setiap kali balik ke Main (misal dari PaymentSuccess), refetch rental aktif
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchActiveRental(userId);
+    });
+    return unsubscribe;
+  }, [navigation, userId]);
+
+  return (
+    <MainTabs
+      userId={userId}
+      activeRental={activeRental}
+      onRentalEnded={onRentalEnded}
+    />
   );
 }
 
@@ -112,10 +132,10 @@ export default function App() {
         <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
           <Stack.Screen name="Main">
             {() => (
-              <MainTabs
+              <MainScreen
                 userId={userId}
                 activeRental={activeRental}
-                onRentalStarted={setActiveRental}
+                fetchActiveRental={fetchActiveRental}
                 onRentalEnded={() => { setActiveRental(null); fetchActiveRental(userId); }}
               />
             )}

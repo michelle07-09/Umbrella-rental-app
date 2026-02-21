@@ -5,24 +5,26 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polygon, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabase';
 import {
   ITB_CENTER, RAIN_RISK_ZONES, SECURITY_POSTS, DURATION_OPTIONS,
 } from '../constants/MapData';
 
-export default function MapScreen({ userId, onRentalStarted, activeRental }) {
+export default function MapScreen({ userId, activeRental }) {
+  const navigation = useNavigation();
   const [location, setLocation] = useState(null);
   const [spots, setSpots] = useState([]);
   const [selectedSpot, setSelectedSpot] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [userBalance, setUserBalance] = useState(0);
+  const [userName, setUserName] = useState('');
   const mapRef = useRef(null);
 
   useEffect(() => {
     getUserLocation();
-    fetchBalance();
+    fetchUserInfo();
     fetchSpots();
   }, []);
 
@@ -33,9 +35,12 @@ export default function MapScreen({ userId, onRentalStarted, activeRental }) {
     setLocation(loc.coords);
   }
 
-  async function fetchBalance() {
-    const { data } = await supabase.from('users').select('balance').eq('id', userId).single();
-    if (data) setUserBalance(data.balance);
+  async function fetchUserInfo() {
+    const { data } = await supabase.from('users').select('balance, name').eq('id', userId).single();
+    if (data) {
+      setUserBalance(data.balance);
+      setUserName(data.name);
+    }
   }
 
   async function fetchSpots() {
@@ -54,37 +59,16 @@ export default function MapScreen({ userId, onRentalStarted, activeRental }) {
     setModalVisible(true);
   }
 
-  async function startRental() {
-    if (userBalance < selectedDuration.price) {
-      Alert.alert('Saldo Tidak Cukup', `Saldo Rp${userBalance.toLocaleString('id-ID')}, butuh Rp${selectedDuration.price.toLocaleString('id-ID')}.`);
-      return;
-    }
-    setLoading(true);
-
-    const { error: balError } = await supabase
-      .from('users')
-      .update({ balance: userBalance - selectedDuration.price })
-      .eq('id', userId);
-
-    if (balError) { Alert.alert('Error', balError.message); setLoading(false); return; }
-
-    const { data, error } = await supabase.from('rentals').insert({
-      user_id: userId,
-      spot_id: selectedSpot.id,
-      allowed_duration: `${selectedDuration.hours} hours`,
-      active: true,
-      extra_charge: 0,
-      payment_method: 'saldo',
-    }).select().single();
-
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      setModalVisible(false);
-      setUserBalance(prev => prev - selectedDuration.price);
-      onRentalStarted(data);
-    }
-    setLoading(false);
+  function goToPayment() {
+    setModalVisible(false);
+    navigation.navigate('Payment', {
+      spot: selectedSpot,
+      duration: selectedDuration,
+      userId,
+      userName,
+      userBalance,
+      userPhone: null,
+    });
   }
 
   return (
@@ -208,8 +192,8 @@ export default function MapScreen({ userId, onRentalStarted, activeRental }) {
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelBtnText}>Batal</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={startRental} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Sewa Sekarang →</Text>}
+              <TouchableOpacity style={styles.confirmBtn} onPress={goToPayment}>
+                <Text style={styles.confirmBtnText}>Pilih Pembayaran →</Text>
               </TouchableOpacity>
             </View>
           </View>
