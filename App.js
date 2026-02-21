@@ -1,5 +1,5 @@
 import 'react-native-url-polyfill/auto';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { supabase } from './src/supabase';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import SplashScreen from './src/screens/SplashScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import MapScreen from './src/screens/MapScreen';
@@ -19,16 +20,31 @@ import PaymentSuccessScreen from './src/screens/PaymentSuccessScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function MainTabs({ userId, activeRental, onRentalEnded, onRefreshRental }) {
+function MainTabs({ userId, activeRental, onRentalEnded }) {
+  const { theme, isDark } = useTheme();
+
+  const tabOptions = ({ route }) => ({
+    headerShown: false,
+    tabBarActiveTintColor: theme.accent,
+    tabBarInactiveTintColor: theme.textMuted,
+    tabBarStyle: {
+      backgroundColor: theme.tabBar,
+      borderTopColor: theme.tabBorder,
+      borderTopWidth: 1,
+      height: 64,
+      paddingBottom: 10,
+    },
+    tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+    tabBarIcon: ({ focused }) => {
+      const icons = { Peta: '🗺️', Sewa: '☂️', Profil: '👤' };
+      return <Text style={{ fontSize: focused ? 22 : 19, opacity: focused ? 1 : 0.55 }}>{icons[route.name]}</Text>;
+    },
+  });
+
   return (
     <Tab.Navigator screenOptions={tabOptions}>
       <Tab.Screen name="Peta">
-        {() => (
-          <MapScreen
-            userId={userId}
-            activeRental={activeRental}
-          />
-        )}
+        {() => <MapScreen userId={userId} activeRental={activeRental} />}
       </Tab.Screen>
       <Tab.Screen
         name="Sewa"
@@ -39,16 +55,12 @@ function MainTabs({ userId, activeRental, onRentalEnded, onRefreshRental }) {
       >
         {() =>
           activeRental ? (
-            <ActiveRentalScreen
-              rental={activeRental}
-              userId={userId}
-              onRentalEnded={onRentalEnded}
-            />
+            <ActiveRentalScreen rental={activeRental} userId={userId} onRentalEnded={onRentalEnded} />
           ) : (
-            <View style={styles.noRental}>
+            <View style={[styles.noRental, { backgroundColor: theme.bg }]}>
               <Text style={styles.noRentalEmoji}>☂️</Text>
-              <Text style={styles.noRentalTitle}>Tidak Ada Sewa Aktif</Text>
-              <Text style={styles.noRentalSub}>Tap titik ☂️ di peta untuk mulai menyewa.</Text>
+              <Text style={[styles.noRentalTitle, { color: theme.text }]}>Tidak Ada Sewa Aktif</Text>
+              <Text style={[styles.noRentalSub, { color: theme.textMuted }]}>Tap titik ☂️ di peta untuk mulai menyewa.</Text>
             </View>
           )
         }
@@ -60,28 +72,20 @@ function MainTabs({ userId, activeRental, onRentalEnded, onRefreshRental }) {
   );
 }
 
-// Wrapper untuk Main screen agar bisa listen focus event
 function MainScreen({ userId, activeRental, onRentalEnded, fetchActiveRental }) {
   const navigation = useNavigation();
-
   useEffect(() => {
-    // Setiap kali balik ke Main (misal dari PaymentSuccess), refetch rental aktif
     const unsubscribe = navigation.addListener('focus', () => {
       fetchActiveRental(userId);
     });
     return unsubscribe;
   }, [navigation, userId]);
 
-  return (
-    <MainTabs
-      userId={userId}
-      activeRental={activeRental}
-      onRentalEnded={onRentalEnded}
-    />
-  );
+  return <MainTabs userId={userId} activeRental={activeRental} onRentalEnded={onRentalEnded} />;
 }
 
-export default function App() {
+function AppContent() {
+  const { theme, isDark } = useTheme();
   const [showSplash, setShowSplash] = useState(true);
   const [session, setSession] = useState(undefined);
   const [activeRental, setActiveRental] = useState(null);
@@ -106,6 +110,18 @@ export default function App() {
     setActiveRental(data || null);
   }
 
+  const navTheme = {
+    dark: isDark,
+    colors: {
+      primary: theme.accent,
+      background: theme.bg,
+      card: theme.card,
+      text: theme.text,
+      border: theme.border,
+      notification: '#ef4444',
+    },
+  };
+
   if (showSplash) {
     return (
       <SafeAreaProvider>
@@ -116,18 +132,27 @@ export default function App() {
   }
 
   if (session === undefined) {
-    return <View style={styles.loading}><ActivityIndicator color="#1a7fe8" size="large" /></View>;
+    return (
+      <View style={[styles.loading, { backgroundColor: theme.bg }]}>
+        <ActivityIndicator color={theme.accent} size="large" />
+      </View>
+    );
   }
 
   if (!session) {
-    return <SafeAreaProvider><StatusBar style="light" /><AuthScreen /></SafeAreaProvider>;
+    return (
+      <SafeAreaProvider>
+        <StatusBar style={theme.statusBar} />
+        <AuthScreen />
+      </SafeAreaProvider>
+    );
   }
 
   const userId = session.user.id;
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <StatusBar style={theme.statusBar} />
       <NavigationContainer theme={navTheme}>
         <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
           <Stack.Screen name="Main">
@@ -148,30 +173,18 @@ export default function App() {
   );
 }
 
-const navTheme = {
-  dark: true,
-  colors: {
-    primary: '#1a7fe8', background: '#05090f', card: '#0c1929',
-    text: '#dde8f5', border: '#162840', notification: '#ef4444',
-  },
-};
-
-const tabOptions = ({ route }) => ({
-  headerShown: false,
-  tabBarActiveTintColor: '#3b9eff',
-  tabBarInactiveTintColor: '#3d5a73',
-  tabBarStyle: { backgroundColor: '#0c1929', borderTopColor: '#162840', borderTopWidth: 1, height: 64, paddingBottom: 10 },
-  tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
-  tabBarIcon: ({ focused }) => {
-    const icons = { Peta: '🗺️', Sewa: '☂️', Profil: '👤' };
-    return <Text style={{ fontSize: focused ? 22 : 19, opacity: focused ? 1 : 0.55 }}>{icons[route.name]}</Text>;
-  },
-});
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: '#05090f', justifyContent: 'center', alignItems: 'center' },
-  noRental: { flex: 1, backgroundColor: '#05090f', justifyContent: 'center', alignItems: 'center', padding: 32 },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  noRental: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   noRentalEmoji: { fontSize: 64, marginBottom: 16, opacity: 0.6 },
-  noRentalTitle: { fontSize: 20, fontWeight: '800', color: '#dde8f5', marginBottom: 8 },
-  noRentalSub: { fontSize: 14, color: '#3d5a73', textAlign: 'center', lineHeight: 20 },
+  noRentalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 8 },
+  noRentalSub: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
 });
