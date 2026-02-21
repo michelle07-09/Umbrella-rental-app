@@ -5,7 +5,7 @@ const METHOD_LABELS = {
   gopay:'GoPay', ovo:'OVO', dana:'DANA', shopeepay:'ShopeePay',
   qris:'QRIS', bca:'BCA VA', mandiri:'Mandiri VA', saldo:'Saldo Aplikasi',
 };
-const WA_BUSINESS = '628123456789';
+const WA_BUSINESS = '6281212223999';
 
 export default function PaymentSuccessScreen({ route, navigation }) {
   const { rental, spot, duration, method, userName } = route.params;

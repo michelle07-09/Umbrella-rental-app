@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polygon, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { supabase } from 'src/supabase';
+import { supabase } from '../supabase';
 import {
   ITB_CENTER, RAIN_RISK_ZONES, SECURITY_POSTS, DURATION_OPTIONS,
-} from 'src/constants/mapData';
+} from '../constants/MapData';
 
 export default function MapScreen({ userId, onRentalStarted, activeRental }) {
   const [location, setLocation] = useState(null);
@@ -209,7 +209,7 @@ export default function MapScreen({ userId, onRentalStarted, activeRental }) {
                 <Text style={styles.cancelBtnText}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmBtn} onPress={startRental} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Pilih Pembayaran →</Text>}
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Sewa Sekarang →</Text>}
               </TouchableOpacity>
             </View>
           </View>

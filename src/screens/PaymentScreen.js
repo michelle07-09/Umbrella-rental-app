@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   ActivityIndicator, Alert, Linking,
 } from 'react-native';
-import { supabase } from 'src/supabase';
+import { supabase } from '../supabase';
 
 const PAYMENT_METHODS = [
   {

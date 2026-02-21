@@ -3,14 +3,15 @@ import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
-import { supabase } from 'src/supabase';
-import { RENTAL_SPOTS } from 'src/constants/mapData';
+import { supabase } from '../supabase';
 
 const TOP_UP_OPTIONS = [5000, 10000, 20000, 50000];
 
 export default function ProfileScreen({ userId }) {
   const [user, setUser] = useState(null);
+  const [userEmail, setUserEmail] = useState('');
   const [history, setHistory] = useState([]);
+  const [spotMap, setSpotMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -19,12 +20,24 @@ export default function ProfileScreen({ userId }) {
   }, []);
 
   async function fetchData() {
-    const [userRes, historyRes] = await Promise.all([
+    const [userRes, historyRes, spotsRes, authRes] = await Promise.all([
       supabase.from('users').select('*').eq('id', userId).single(),
       supabase.from('rentals').select('*').eq('user_id', userId).order('start_time', { ascending: false }).limit(20),
+      supabase.from('rental_spots').select('id, name'),
+      supabase.auth.getUser(),
     ]);
+
     if (userRes.data) setUser(userRes.data);
     if (historyRes.data) setHistory(historyRes.data);
+    if (authRes.data?.user?.email) setUserEmail(authRes.data.user.email);
+
+    // Build spot lookup map: { uuid: 'Nama Spot' }
+    if (spotsRes.data) {
+      const map = {};
+      spotsRes.data.forEach(s => { map[s.id] = s.name; });
+      setSpotMap(map);
+    }
+
     setLoading(false);
     setRefreshing(false);
   }
@@ -39,7 +52,7 @@ export default function ProfileScreen({ userId }) {
     if (error) Alert.alert('Error', error.message);
     else {
       setUser(data);
-      Alert.alert('Top Up Berhasil', `Rp${amount.toLocaleString()} telah ditambahkan.`);
+      Alert.alert('Top Up Berhasil', `Rp${amount.toLocaleString('id-ID')} telah ditambahkan.`);
     }
   }
 
@@ -48,7 +61,7 @@ export default function ProfileScreen({ userId }) {
   }
 
   function getSpotName(spotId) {
-    return RENTAL_SPOTS.find(s => s.id === spotId)?.name || spotId;
+    return spotMap[spotId] || 'Titik Sewa';
   }
 
   function formatDate(iso) {
@@ -78,10 +91,10 @@ export default function ProfileScreen({ userId }) {
               <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || '?'}</Text>
             </View>
             <Text style={styles.userName}>{user?.name}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={styles.userEmail}>{userEmail}</Text>
             <View style={styles.balanceBox}>
               <Text style={styles.balanceLabel}>Saldo</Text>
-              <Text style={styles.balanceValue}>Rp{(user?.balance || 0).toLocaleString()}</Text>
+              <Text style={styles.balanceValue}>Rp{(user?.balance || 0).toLocaleString('id-ID')}</Text>
             </View>
           </View>
 
@@ -90,7 +103,7 @@ export default function ProfileScreen({ userId }) {
             <View style={styles.topUpGrid}>
               {TOP_UP_OPTIONS.map(amt => (
                 <TouchableOpacity key={amt} style={styles.topUpBtn} onPress={() => topUp(amt)}>
-                  <Text style={styles.topUpText}>+Rp{amt.toLocaleString()}</Text>
+                  <Text style={styles.topUpText}>+Rp{amt.toLocaleString('id-ID')}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -113,7 +126,7 @@ export default function ProfileScreen({ userId }) {
               <>
                 <Text style={styles.historyAllowed}>{item.allowed_duration}</Text>
                 {item.extra_charge > 0 && (
-                  <Text style={styles.historyOverage}>+Rp{item.extra_charge.toLocaleString()}</Text>
+                  <Text style={styles.historyOverage}>+Rp{item.extra_charge.toLocaleString('id-ID')}</Text>
                 )}
               </>
             )}

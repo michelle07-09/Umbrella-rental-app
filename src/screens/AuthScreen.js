@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
-import { supabase } from 'src/supabase';
+import { supabase } from '../supabase';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);

@@ -1,5 +1,5 @@
 import { Linking } from 'react-native';
-import { supabase } from 'src/supabase';
+import { supabase } from '../supabase';
 
 const WA_BUSINESS_NUMBER = '628123456789'; // Ganti dengan nomor WA Business kamu
 

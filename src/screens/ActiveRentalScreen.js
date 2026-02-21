@@ -3,8 +3,8 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Alert,
   ActivityIndicator, Animated,
 } from 'react-native';
-import { supabase } from 'src/supabase';
-import { OVERAGE_PRICE_PER_HOUR, RENTAL_SPOTS } from 'src/constants/mapData';
+import { supabase } from '../supabase';
+import { OVERAGE_PRICE_PER_HOUR } from '../constants/MapData';
 
 function parseAllowedHours(allowedDuration) {
   const match = String(allowedDuration).match(/(\d+)/);
@@ -15,13 +15,25 @@ export default function ActiveRentalScreen({ rental, userId, onRentalEnded }) {
   const [elapsed, setElapsed] = useState(0);
   const [overage, setOverage] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [spotName, setSpotName] = useState('Titik Sewa');
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const allowedHours = parseAllowedHours(rental.allowed_duration);
   const allowedMs = allowedHours * 60 * 60 * 1000;
-  const spot = RENTAL_SPOTS.find(s => s.id === rental.spot_id) || { name: 'Titik Sewa' };
 
   useEffect(() => {
+    // Fetch spot name from Supabase
+    async function fetchSpotName() {
+      if (!rental.spot_id) return;
+      const { data } = await supabase
+        .from('rental_spots')
+        .select('name')
+        .eq('id', rental.spot_id)
+        .single();
+      if (data?.name) setSpotName(data.name);
+    }
+    fetchSpotName();
+
     const interval = setInterval(() => {
       const start = new Date(rental.start_time).getTime();
       const now = Date.now();
@@ -31,7 +43,7 @@ export default function ActiveRentalScreen({ rental, userId, onRentalEnded }) {
       if (diff > allowedMs) {
         const overMs = diff - allowedMs;
         const overHours = overMs / (1000 * 60 * 60);
-        const charge = Math.ceil(overHours * OVERAGE_PRICE_PER_HOUR);
+        const charge = Math.ceil(overHours) * OVERAGE_PRICE_PER_HOUR;
         setOverage(charge);
       }
     }, 1000);
@@ -66,7 +78,7 @@ export default function ActiveRentalScreen({ rental, userId, onRentalEnded }) {
   async function endRental() {
     Alert.alert(
       'Kembalikan Payung',
-      `${overage > 0 ? `Kamu overtime, akan dikenakan denda Rp${overage.toLocaleString()}.` : 'Kamu masih dalam waktu sewa.'}\n\nKembalikan payung ke ${spot.name}?`,
+      `${overage > 0 ? `Kamu overtime, akan dikenakan denda Rp${overage.toLocaleString('id-ID')}.` : 'Kamu masih dalam waktu sewa.'}\n\nKembalikan payung ke ${spotName}?`,
       [
         { text: 'Batal', style: 'cancel' },
         { text: 'Kembalikan', style: isOvertime ? 'destructive' : 'default', onPress: confirmEndRental },
@@ -109,7 +121,7 @@ export default function ActiveRentalScreen({ rental, userId, onRentalEnded }) {
 
       <View style={styles.timerCard}>
         <Animated.Text style={[styles.umbrellaIcon, { transform: [{ scale: pulseAnim }] }]}>☂️</Animated.Text>
-        <Text style={styles.spotName}>{spot.name}</Text>
+        <Text style={styles.spotName}>{spotName}</Text>
         <Text style={styles.timerLabel}>{isOvertime ? 'Durasi Sewa' : 'Sisa Waktu'}</Text>
         <Text style={[styles.timer, isOvertime && styles.timerOvertime]}>
           {isOvertime ? formatTime(elapsed) : formatTimeLeft()}
@@ -139,8 +151,8 @@ export default function ActiveRentalScreen({ rental, userId, onRentalEnded }) {
       {isOvertime && (
         <View style={styles.overageCard}>
           <Text style={styles.overageTitle}>⚠️ Biaya Overtime</Text>
-          <Text style={styles.overageAmount}>Rp{overage.toLocaleString()}</Text>
-          <Text style={styles.overageSub}>Rp3.000/jam × {((elapsed - allowedMs) / (1000 * 60 * 60)).toFixed(2)} jam</Text>
+          <Text style={styles.overageAmount}>Rp{overage.toLocaleString('id-ID')}</Text>
+          <Text style={styles.overageSub}>Rp3.000/jam × {Math.ceil((elapsed - allowedMs) / (1000 * 60 * 60))} jam</Text>
         </View>
       )}
 
@@ -153,7 +165,7 @@ export default function ActiveRentalScreen({ rental, userId, onRentalEnded }) {
           <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.returnBtnText}>
-            {isOvertime ? `🚨 Kembalikan (+Rp${overage.toLocaleString()})` : '↩️ Kembalikan Payung'}
+            {isOvertime ? `🚨 Kembalikan (+Rp${overage.toLocaleString('id-ID')})` : '↩️ Kembalikan Payung'}
           </Text>
         )}
       </TouchableOpacity>
@@ -169,31 +181,20 @@ const styles = StyleSheet.create({
   badgeOvertime: { backgroundColor: '#7f1d1d' },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   timerCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 20,
-    padding: 28,
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
+    backgroundColor: '#1e293b', borderRadius: 20, padding: 28,
+    alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#334155',
   },
   umbrellaIcon: { fontSize: 52, marginBottom: 8 },
   spotName: { fontSize: 16, color: '#94a3b8', marginBottom: 16 },
   timerLabel: { fontSize: 13, color: '#64748b', marginBottom: 6 },
   timer: { fontSize: 52, fontWeight: '900', color: '#3b82f6', letterSpacing: 2, fontVariant: ['tabular-nums'] },
   timerOvertime: { color: '#ef4444' },
-  progressBar: {
-    width: '100%', height: 8, backgroundColor: '#0f172a', borderRadius: 4,
-    marginTop: 20, overflow: 'hidden',
-  },
+  progressBar: { width: '100%', height: 8, backgroundColor: '#0f172a', borderRadius: 4, marginTop: 20, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#3b82f6', borderRadius: 4 },
   progressOvertime: { backgroundColor: '#ef4444' },
   progressLabel: { color: '#475569', fontSize: 11, marginTop: 6 },
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  statCard: {
-    flex: 1, backgroundColor: '#1e293b', borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: '#334155',
-  },
+  statCard: { flex: 1, backgroundColor: '#1e293b', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#334155' },
   statLabel: { color: '#64748b', fontSize: 12, marginBottom: 6 },
   statValue: { color: '#f1f5f9', fontWeight: '700', fontSize: 16 },
   overageCard: {
@@ -203,10 +204,7 @@ const styles = StyleSheet.create({
   overageTitle: { color: '#fca5a5', fontSize: 13, fontWeight: '600', marginBottom: 4 },
   overageAmount: { color: '#ef4444', fontSize: 28, fontWeight: '900' },
   overageSub: { color: '#7f1d1d', fontSize: 12, marginTop: 4 },
-  returnBtn: {
-    backgroundColor: '#1d4ed8', borderRadius: 14, padding: 17,
-    alignItems: 'center', marginTop: 'auto',
-  },
+  returnBtn: { backgroundColor: '#1d4ed8', borderRadius: 14, padding: 17, alignItems: 'center', marginTop: 'auto' },
   returnBtnOvertime: { backgroundColor: '#b91c1c' },
   returnBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });
