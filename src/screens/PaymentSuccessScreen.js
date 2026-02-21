@@ -2,19 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Linking } from 'react-native';
 
 const METHOD_LABELS = {
-  gopay:'GoPay', ovo:'OVO', dana:'DANA', shopeepay:'ShopeePay',
-  qris:'QRIS', bca:'BCA VA', mandiri:'Mandiri VA', saldo:'Saldo Aplikasi',
+  gopay: 'GoPay', ovo: 'OVO', dana: 'DANA', shopeepay: 'ShopeePay',
+  qris: 'QRIS', bca: 'BCA VA', mandiri: 'Mandiri VA', saldo: 'Saldo Aplikasi',
 };
-const WA_BUSINESS = '6281212223999';
+
+// Ganti dengan nomor WA Business kamu
+const WA_BUSINESS = '628123456789';
 
 export default function PaymentSuccessScreen({ route, navigation }) {
   const { rental, spot, duration, method, userName } = route.params;
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
-  const start = new Date(rental.start_time);
-  const end = new Date(start.getTime() + duration.hours * 3600000);
-  const fmt = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  // FIX: jaga-jaga kalau start_time null
+  const startTime = rental.start_time ? new Date(rental.start_time) : new Date();
+  const endTime = new Date(startTime.getTime() + duration.hours * 3600000);
+  const fmt = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   const firstName = name => name?.split(' ')[0] || 'Pengguna';
 
   useEffect(() => {
@@ -31,9 +34,9 @@ export default function PaymentSuccessScreen({ route, navigation }) {
     `📍 Lokasi: ${spot.name}`,
     `⏱️ Durasi: ${duration.hours} Jam`,
     `💳 Via: ${METHOD_LABELS[method] || method}`,
-    `🕐 Mulai: ${fmt(start)}`,
+    `🕐 Mulai: ${fmt(startTime)}`,
     '',
-    `Kembalikan sebelum *${fmt(end)}* agar tidak kena denda Rp3.000/jam.`,
+    `Kembalikan sebelum *${fmt(endTime)}* agar tidak kena denda Rp3.000/jam.`,
     '',
     `Umbrella Rental ITB 🙏`,
   ].join('\n');
@@ -57,8 +60,9 @@ export default function PaymentSuccessScreen({ route, navigation }) {
       <Animated.View style={[styles.waCard, { opacity }]}>
         <View style={styles.waHeader}>
           <View style={styles.waDot} />
-          <Text style={styles.waHeaderText}>WhatsApp Business — Terkirim</Text>
+          <Text style={styles.waHeaderText}>WhatsApp Business — Konfirmasi</Text>
         </View>
+        {/* FIX: hapus borderRadius CSS string '10px 10px 10px 2px' */}
         <View style={styles.waBubble}>
           <Text style={styles.waText}>
             Halo {firstName(userName)}! ☂️{'\n\n'}
@@ -66,13 +70,13 @@ export default function PaymentSuccessScreen({ route, navigation }) {
             📍 Lokasi: {spot.name}{'\n'}
             ⏱️ Durasi: {duration.hours} Jam{'\n'}
             💳 Via: {METHOD_LABELS[method] || method}{'\n'}
-            🕐 Mulai: {fmt(start)}{'\n\n'}
+            🕐 Mulai: {fmt(startTime)}{'\n\n'}
             Kembalikan sebelum{' '}
-            <Text style={styles.waTextBold}>{fmt(end)}</Text>
+            <Text style={styles.waTextBold}>{fmt(endTime)}</Text>
             {' '}agar tidak kena denda.{'\n\n'}
             Terima kasih sudah menggunakan Umbrella Rental ITB 🙏
           </Text>
-          <Text style={styles.waTime}>{fmt(start)} ✓✓</Text>
+          <Text style={styles.waTime}>{fmt(startTime)} ✓✓</Text>
         </View>
         <TouchableOpacity style={styles.openWaBtn} onPress={openWA}>
           <Text style={styles.openWaText}>📱 Buka di WhatsApp</Text>
@@ -97,12 +101,13 @@ const styles = StyleSheet.create({
   waHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   waDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#25D366' },
   waHeaderText: { fontSize: 12, fontWeight: '700', color: '#25D366' },
-  waBubble: { backgroundColor: 'rgba(37,211,102,0.1)', borderRadius: '10px 10px 10px 2px', borderRadius: 12, padding: 12 },
+  // FIX: hapus CSS string borderRadius, pakai angka saja
+  waBubble: { backgroundColor: 'rgba(37,211,102,0.1)', borderRadius: 12, padding: 12 },
   waText: { fontSize: 12, color: 'rgba(220,255,230,0.85)', lineHeight: 18 },
   waTextBold: { fontWeight: '700', color: '#4ade80' },
   waTime: { fontSize: 10, color: 'rgba(37,211,102,0.5)', textAlign: 'right', marginTop: 4 },
   openWaBtn: { marginTop: 10, backgroundColor: 'rgba(37,211,102,0.15)', borderRadius: 10, padding: 10, alignItems: 'center' },
   openWaText: { fontSize: 13, fontWeight: '700', color: '#25D366' },
-  doneBtn: { width: '100%', backgroundColor: '#1a7fe8', borderRadius: 16, padding: 16, alignItems: 'center', shadowColor: '#1a7fe8', shadowOpacity: 0.35, shadowRadius: 20, elevation: 6 },
+  doneBtn: { width: '100%', backgroundColor: '#1a7fe8', borderRadius: 16, padding: 16, alignItems: 'center', elevation: 6 },
   doneBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });
